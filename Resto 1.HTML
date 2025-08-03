@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Gestión de Personal</title>
+
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons for UI icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts for typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Base styles and component definitions */
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .dashboard-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .lang-btn.active { background-color: #3b82f6; color: white; }
+        /* Custom styling for range inputs */
+        input[type=range] {
+            -webkit-appearance: none; appearance: none; width: 100%; height: 8px;
+            background: #d1d5db; border-radius: 5px; outline: none; opacity: 0.7;
+            transition: opacity .2s;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+            background: #3b82f6; border-radius: 50%; cursor: pointer;
+        }
+        input[type=range]:hover { opacity: 1; }
+        /* Chart bar transition */
+        .chart-bar {
+            transition: height 0.3s ease-in-out, background-color 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="p-4 lg:p-8">
+<div class="max-w-7xl mx-auto">
+    <!-- HEADER SECTION -->
+    <header class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div>
+            <h1 data-translate-key="mainTitle" class="text-3xl font-bold text-gray-800"></h1>
+            <p data-translate-key="mainSubtitle" class="text-gray-500 mt-1"></p>
+        </div>
+        <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+            <!-- Location Selector -->
+            <select id="location-selector" class="border text-sm rounded-lg p-2.5 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="aguda" selected>AGUDA</option>
+                <option value="porto">PORTO</option>
+            </select>
+            <!-- Language Switcher -->
+            <div class="flex border rounded-lg p-1 bg-white shadow-sm">
+                <button id="lang-pt" class="lang-btn px-3 py-1 text-sm rounded-md" data-lang="pt">Português</button>
+                <button id="lang-es" class="lang-btn px-3 py-1 text-sm rounded-md" data-lang="es">Español</button>
+            </div>
+            <!-- Help Button -->
+            <button id="help-btn" class="p-2.5 border rounded-lg bg-white shadow-sm text-gray-600 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                <i class="ph ph-question text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- KPIs SECTION -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="dashboard-card p-5 text-center">
+            <p data-translate-key="laborCost" class="text-sm text-gray-600 mb-1"></p>
+            <p id="kpi-labor-cost" class="text-3xl font-bold text-gray-800"></p>
+        </div>
+        <div class="dashboard-card p-5 text-center">
+            <p data-translate-key="staffProductivity" class="text-sm text-gray-600 mb-1"></p>
+            <p id="kpi-staff-prod" class="text-3xl font-bold text-gray-800"></p>
+        </div>
+        <div class="dashboard-card p-5 text-center">
+            <p class="text-sm text-gray-600 mb-1 flex justify-center items-center">
+                <span data-translate-key="staffTurnover"></span>
+                <i class="ph-info ml-2 text-gray-500 cursor-help" title="Mide el porcentaje de empleados que dejan la empresa mensualmente. Un valor bajo es ideal."></i>
+            </p>
+            <p id="kpi-staff-turnover" class="text-3xl font-bold"></p>
+        </div>
+    </section>
+
+    <!-- CALCULATORS SECTION -->
+    <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Waiter Calculator Card -->
+        <div class="dashboard-card p-6">
+            <h3 data-translate-key="waiterCalculatorTitle" class="text-xl font-bold text-gray-800 mb-6"></h3>
+            <div class="space-y-6">
+                <div>
+                    <label data-translate-key="waiterArrivalRate" class="block text-sm font-medium text-gray-700"></label>
+                    <input type="range" id="waiter-arrivals" min="10" max="70" value="40" aria-label="Llegadas por hora">
+                    <div class="text-right text-sm text-gray-600"><span id="waiter-arrivals-value">40</span> <span data-translate-key="tablesPerHour"></span></div>
+                </div>
+                <div>
+                    <label data-translate-key="waiterDinersPerTable" class="block text-sm font-medium text-gray-700"></label>
+                    <input type="range" id="waiter-diners" min="1" max="8" value="3" aria-label="Comensales por mesa">
+                    <div class="text-right text-sm text-gray-600"><span id="waiter-diners-value">3</span> <span data-translate-key="dinersPerTable"></span></div>
+                </div>
+                <div>
+                    <label data-translate-key="waiterServiceTime" class="block text-sm font-medium text-gray-700"></label>
+                    <input type="range" id="waiter-service-time" min="5" max="15" value="10" aria-label="Tiempo por mesa">
+                    <div class="text-right text-sm text-gray-600"><span id="waiter-service-time-value">10</span> <span data-translate-key="minutesPerTable"></span></div>
+                </div>
+                <div>
+                    <label data-translate-key="waiterCount" class="block text-sm font-medium text-gray-700"></label>
+                    <input type="range" id="waiter-count" min="1" max="12" value="8" aria-label="Número de mozos">
+                    <div class="text-right text-sm text-gray-600"><span id="waiter-count-value">8</span> <span data-translate-key="waiters"></span></div>
+                </div>
+            </div>
+            <div class="mt-8 grid grid-cols-2 gap-4 text-center">
+                <div class="bg-gray-100 p-4 rounded-lg"><p data-translate-key="utilization" class="text-sm text-gray-600"></p><p id="waiter-utilization" class="text-2xl font-bold"></p></div>
+                <div class="bg-gray-100 p-4 rounded-lg"><p data-translate-key="waitProbability" class="text-sm text-gray-600"></p><p id="waiter-wait-prob" class="text-2xl font-bold"></p></div>
+                <div class="bg-gray-100 p-4 rounded-lg"><p data-translate-key="avgWaitTime" class="text-sm text-gray-600"></p><p id="waiter-avg-wait" class="text-2xl font-bold"></p></div>
+                <div class="bg-gray-100 p-4 rounded-lg"><p data-translate-key="maxCapacity" class="text-sm text-gray-600"></p><p id="waiter-max-capacity" class="text-2xl font-bold"></p></div>
+            </div>
+            <!-- New Chart Section -->
+            <div class="mt-6 pt-4 border-t">
+                <h4 class="text-sm font-medium text-gray-700 text-center mb-2" data-translate-key="demandVsCapacity"></h4>
+                <div class="h-48 bg-slate-100 rounded-lg p-4 flex justify-around items-end space-x-4">
+                    <div class="text-center w-1/2">
+                        <div id="demand-bar" class="chart-bar w-12 mx-auto bg-blue-400 rounded-t-md" style="height: 0%;"></div>
+                        <p class="text-xs mt-1" data-translate-key="forecastedDemand"></p>
+                        <p id="demand-value" class="text-sm font-bold"></p>
+                    </div>
+                    <div class="text-center w-1/2">
+                        <div id="capacity-bar" class="chart-bar w-12 mx-auto bg-green-400 rounded-t-md" style="height: 0%;"></div>
+                        <p class="text-xs mt-1" data-translate-key="targetCapacity"></p>
+                        <p id="capacity-value" class="text-sm font-bold"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kitchen Calculator Card -->
+        <div class="dashboard-card p-6">
+            <h3 data-translate-key="kitchenCalculatorTitle" class="text-xl font-bold text-gray-800 mb-6"></h3>
+            <div class="space-y-6">
+                <div>
+                    <label data-translate-key="kitchenArrivalRate" class="block text-sm font-medium text-gray-700"></label>
+                    <input type="range" id="kitchen-arrivals" min="50" max="400" value="200" aria-label="Llegada de pedidos">
+                    <div class="text-right text-sm text-gray-600"><span id="kitchen-arrivals-value">200</span> <span data-translate-key="ordersPerHour"></span></div>
+                </div>
+                <div>
+                    <label data-translate-key="kitchenServiceTime" class="block text-sm font-medium text-gray-700"></label>
+                    <input type="range" id="kitchen-service-time" min="1" max="15" value="3" aria-label="Tiempo por pedido">
+                    <div class="text-right text-sm text-gray-600"><span id="kitchen-service-time-value">3</span> <span data-translate-key="minutesPerOrder"></span></div>
+                </div>
+                <div>
+                    <label data-translate-key="cookCount" class="block text-sm font-medium text-gray-700"></label>
+                    <input type="range" id="kitchen-count" min="1" max="10" value="6" aria-label="Número de cocineros">
+                    <div class="text-right text-sm text-gray-600"><span id="kitchen-count-value">6</span> <span data-translate-key="cooks"></span></div>
+                </div>
+            </div>
+            <div class="mt-8 grid grid-cols-2 gap-4 text-center">
+                <div class="bg-gray-100 p-4 rounded-lg"><p data-translate-key="utilization" class="text-sm text-gray-600"></p><p id="kitchen-utilization" class="text-2xl font-bold"></p></div>
+                <div class="bg-gray-100 p-4 rounded-lg"><p data-translate-key="waitProbability" class="text-sm text-gray-600"></p><p id="kitchen-wait-prob" class="text-2xl font-bold"></p></div>
+                <div class="bg-gray-100 p-4 rounded-lg col-span-2"><p data-translate-key="avgWaitTime" class="text-sm text-gray-600"></p><p id="kitchen-avg-wait" class="text-2xl font-bold"></p></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Help Modal -->
+<div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="dashboard-card max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+        <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+            <i class="ph ph-x text-2xl"></i>
+        </button>
+        <h3 data-translate-key="helpTitle" class="text-xl font-bold text-gray-800 mb-4"></h3>
+        <div class="space-y-4 text-gray-700 text-sm">
+            <p data-translate-key="helpIntro"></p>
+            <div>
+                <h4 data-translate-key="helpKPIs" class="font-bold mt-4 mb-2"></h4>
+                <ul class="list-disc list-inside ml-4 space-y-1">
+                    <li data-translate-key="helpKPIs1"></li>
+                    <li data-translate-key="helpKPIs2"></li>
+                    <li data-translate-key="helpKPIs3"></li>
+                </ul>
+            </div>
+            <div>
+                <h4 data-translate-key="helpWaiters" class="font-bold mt-4 mb-2"></h4>
+                <p data-translate-key="helpWaitersIntro"></p>
+                <ul class="list-disc list-inside ml-4 space-y-1 mt-2">
+                    <li data-translate-key="helpWaiters1"></li>
+                    <li data-translate-key="helpWaiters2"></li>
+                    <li data-translate-key="helpWaiters3"></li>
+                    <li data-translate-key="helpWaiters4"></li>
+                </ul>
+            </div>
+             <div>
+                <h4 data-translate-key="helpChart" class="font-bold mt-4 mb-2"></h4>
+                <p data-translate-key="helpChartIntro"></p>
+            </div>
+            <div>
+                <h4 data-translate-key="helpKitchen" class="font-bold mt-4 mb-2"></h4>
+                <p data-translate-key="helpKitchenIntro"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// --- CORE LOGIC ---
+
+// 1. DATA & TRANSLATIONS
+const translations = {
+    es: {
+        mainTitle: "Dashboard de Personal", mainSubtitle: "Análisis de KPIs y Dimensionamiento de Equipos",
+        waiterCalculatorTitle: "Calculadora de Mozos", kitchenCalculatorTitle: "Calculadora de Cocina",
+        waiterArrivalRate: "Llegada de mesas/grupos por hora", tablesPerHour: "mesas/hr",
+        waiterDinersPerTable: "Comensales promedio por mesa", dinersPerTable: "comensales/mesa",
+        waiterServiceTime: "Tiempo de atención base por mesa", minutesPerTable: "min/mesa",
+        waiterCount: "Número de mozos de turno", waiters: "mozos",
+        kitchenArrivalRate: "Llegada de pedidos a cocina por hora", ordersPerHour: "pedidos/hr",
+        kitchenServiceTime: "Tiempo promedio de preparación por pedido", minutesPerOrder: "min/pedido",
+        cookCount: "Número de cocineros/estaciones", cooks: "cocineros",
+        utilization: "Utilización", waitProbability: "Prob. de Espera", avgWaitTime: "Espera Prom.",
+        maxCapacity: "Capacidad Máx. (Comensales/hr)",
+        demandVsCapacity: "Demanda vs. Capacidad (Comensales/hr)",
+        forecastedDemand: "Demanda", targetCapacity: "Capacidad",
+        laborCost: "Costo Laboral / Ventas", staffProductivity: "Ventas / Empleado", staffTurnover: "Rotación Personal (mes)",
+        helpTitle: "Cómo Usar el Dashboard",
+        helpIntro: "Esta herramienta interactiva te permite analizar y planificar las necesidades de personal de tu restaurante utilizando el modelo de teoría de colas Erlang C.",
+        helpKPIs: "Indicadores Principales (KPIs)",
+        helpKPIs1: "<b>Costo Laboral / Ventas:</b> Porcentaje de las ventas que se destina a salarios. Un valor más bajo es mejor.",
+        helpKPIs2: "<b>Ventas / Empleado:</b> Mide la productividad promedio de cada empleado.",
+        helpKPIs3: "<b>Rotación Personal:</b> Porcentaje de empleados que dejan la empresa mensualmente. Un valor bajo indica mayor retención.",
+        helpWaiters: "Calculadora de Mozos",
+        helpWaitersIntro: "Simula el flujo de atención en sala. Usa los deslizadores para ajustar las variables y ver cómo afectan los resultados.",
+        helpWaiters1: "<b>Llegada de mesas:</b> Cuántos grupos de clientes llegan por hora.",
+        helpWaiters2: "<b>Comensales promedio:</b> El tamaño promedio de los grupos. Afecta directamente el tiempo de servicio.",
+        helpWaiters3: "<b>Tiempo de atención base:</b> Cuántos minutos toma atender una mesa de 2 personas.",
+        helpWaiters4: "<b>Número de mozos:</b> La cantidad de personal disponible para atender.",
+        helpChart: "Gráfico Demanda vs. Capacidad",
+        helpChartIntro: "Compara visualmente los comensales que llegan (Demanda) con los que tu equipo puede atender (Capacidad). Si la barra de demanda es roja y más alta, necesitas más personal o reducir los tiempos de atención.",
+        helpKitchen: "Calculadora de Cocina",
+        helpKitchenIntro: "Funciona de manera similar a la de mozos, pero se enfoca en los pedidos que llegan a la cocina y la capacidad de los cocineros para prepararlos."
+    },
+    pt: {
+        mainTitle: "Dashboard de Pessoal", mainSubtitle: "Análise de KPIs e Dimensionamento de Equipes",
+        waiterCalculatorTitle: "Calculadora de Garçons", kitchenCalculatorTitle: "Calculadora de Cozinha",
+        waiterArrivalRate: "Chegada de mesas/grupos por hora", tablesPerHour: "mesas/h",
+        waiterDinersPerTable: "Clientes médios por mesa", dinersPerTable: "clientes/mesa",
+        waiterServiceTime: "Tempo de atendimento base por mesa", minutesPerTable: "min/mesa",
+        waiterCount: "Número de garçons de plantão", waiters: "garçons",
+        kitchenArrivalRate: "Chegada de pedidos à cozinha por hora", ordersPerHour: "pedidos/h",
+        kitchenServiceTime: "Tempo médio de preparo por pedido", minutesPerOrder: "min/pedido",
+        cookCount: "Número de cozinheiros/estações", cooks: "cozinheiros",
+        utilization: "Utilização", waitProbability: "Prob. de Espera", avgWaitTime: "Espera Média",
+        maxCapacity: "Capacidade Máx. (Clientes/h)",
+        demandVsCapacity: "Demanda vs. Capacidade (Clientes/h)",
+        forecastedDemand: "Demanda", targetCapacity: "Capacidade",
+        laborCost: "Custo Pessoal / Vendas", staffProductivity: "Vendas / Funcionário", staffTurnover: "Rotação Pessoal (mês)",
+        helpTitle: "Como Usar o Dashboard",
+        helpIntro: "Esta ferramenta interativa permite analisar e planejar as necessidades de pessoal do seu restaurante usando o modelo de teoria de filas Erlang C.",
+        helpKPIs: "Indicadores Principais (KPIs)",
+        helpKPIs1: "<b>Custo Pessoal / Vendas:</b> Percentual das vendas destinado a salários. Um valor mais baixo é melhor.",
+        helpKPIs2: "<b>Vendas / Funcionário:</b> Mede a produtividade média de cada funcionário.",
+        helpKPIs3: "<b>Rotação Pessoal:</b> Percentual de funcionários que deixam a empresa mensalmente. Um valor baixo indica maior retenção.",
+        helpWaiters: "Calculadora de Garçons",
+        helpWaitersIntro: "Simula o fluxo de atendimento no salão. Use os controles deslizantes para ajustar as variáveis e ver como elas afetam os resultados.",
+        helpWaiters1: "<b>Chegada de mesas:</b> Quantos grupos de clientes chegam por hora.",
+        helpWaiters2: "<b>Clientes médios:</b> O tamanho médio dos grupos. Afeta diretamente o tempo de serviço.",
+        helpWaiters3: "<b>Tempo de atendimento base:</b> Quantos minutos leva para atender uma mesa de 2 pessoas.",
+        helpWaiters4: "<b>Número de garçons:</b> A quantidade de pessoal disponível para atender.",
+        helpChart: "Gráfico Demanda vs. Capacidade",
+        helpChartIntro: "Compara visualmente os clientes que chegam (Demanda) com os que sua equipe pode atender (Capacidade). Se a barra de demanda for vermelha e mais alta, você precisa de mais pessoal ou reduzir os tempos de atendimento.",
+        helpKitchen: "Calculadora de Cozinha",
+        helpKitchenIntro: "Funciona de maneira semelhante à de garçons, mas foca nos pedidos que chegam à cozinha e na capacidade dos cozinheiros para prepará-los."
+    }
+};
+
+// Mock data simulating a fetch from a backend API
+const mockData = {
+    aguda: { detailedKpis: { laborCost: '26.2%', staffProd: '€510', staffTurnover: '4.2%' } },
+    porto: { detailedKpis: { laborCost: '29.1%', staffProd: '€465', staffTurnover: '6.0%' } }
+};
+
+// 2. MATHEMATICAL MODELS (Queuing Theory)
+
+/**
+ * Calculates factorial of a number (n!).
+ * @param {number} n - The non-negative integer.
+ * @returns {number} The factorial of n.
+ */
+function factorial(n) {
+    if (n < 0) return NaN; // Factorial is not defined for negative numbers
+    if (n === 0) return 1;
+    let res = 1;
+    for (let i = 2; i <= n; i++) res *= i;
+    return res;
+}
+
+/**
+ * Implements the Erlang C formula to model a multi-server queue.
+ * @param {number} c - Number of servers (e.g., waiters, cooks).
+ * @param {number} lambda - Average arrival rate (e.g., tables/hour, orders/hour).
+ * @param {number} mu - Average service rate per server (e.g., tables/hour, orders/hour).
+ * @returns {object} An object containing key performance metrics.
+ */
+function erlangC(c, lambda, mu) {
+    const a = lambda / mu; // Traffic intensity
+    const rho = a / c;     // Server utilization
+
+    if (rho >= 1) {
+        // System is unstable, queue will grow infinitely
+        return { utilization: 1, waitProbability: 1, avgWaitTime: Infinity };
+    }
+
+    let sum = 0;
+    for (let i = 0; i < c; i++) {
+        sum += Math.pow(a, i) / factorial(i);
+    }
+    
+    const p0 = 1 / (sum + (Math.pow(a, c) / (factorial(c) * (1 - rho))));
+    const erlC = (Math.pow(a, c) / (factorial(c) * (1 - rho))) * p0; // Probability of waiting
+    const avgWait = (erlC / (c * mu - lambda)) * 60; // Average wait time in minutes
+
+    return { utilization: rho, waitProbability: erlC, avgWaitTime: avgWait };
+}
+
+// 3. UI UPDATE FUNCTIONS
+
+/**
+ * Updates a specific Erlang calculator (waiter or kitchen) based on slider values.
+ * @param {string} type - The calculator type ('waiter' or 'kitchen').
+ */
+function updateErlangCalculator(type) {
+    // Get common values from the DOM
+    const arrivals = +document.getElementById(`${type}-arrivals`).value;
+    let serviceTime = +document.getElementById(`${type}-service-time`).value;
+    const serverCount = +document.getElementById(`${type}-count`).value;
+    
+    // Update the value displays next to sliders
+    document.getElementById(`${type}-arrivals-value`).textContent = arrivals;
+    document.getElementById(`${type}-service-time-value`).textContent = serviceTime;
+    document.getElementById(`${type}-count-value`).textContent = serverCount;
+
+    // Calculate service rate (items per hour) from the final service time
+    let diners = 0;
+    if (type === 'waiter') {
+        diners = +document.getElementById('waiter-diners').value;
+        document.getElementById('waiter-diners-value').textContent = diners;
+        const adjustmentFactor = 1 + (diners - 2) * 0.15;
+        serviceTime *= Math.max(0.25, adjustmentFactor);
+    }
+    const serviceRate = 60 / serviceTime;
+
+    // Perform Erlang C calculation
+    const { utilization, waitProbability, avgWaitTime } = erlangC(serverCount, arrivals, serviceRate);
+
+    // Update result fields with formatted values
+    const utilEl = document.getElementById(`${type}-utilization`);
+    utilEl.textContent = `${(utilization * 100).toFixed(1)}%`;
+    utilEl.style.color = utilization >= 1 ? '#dc2626' : (utilization > 0.85 ? '#f59e0b' : '#16a34a');
+
+    document.getElementById(`${type}-wait-prob`).textContent = `${(waitProbability * 100).toFixed(1)}%`;
+    
+    const waitEl = document.getElementById(`${type}-avg-wait`);
+    waitEl.textContent = isFinite(avgWaitTime) ? `${avgWaitTime.toFixed(2)} min` : '∞';
+    waitEl.style.color = !isFinite(avgWaitTime) ? '#dc2626' : 'inherit';
+
+    // Specific updates for the waiter calculator (capacity and chart)
+    if (type === 'waiter') {
+        const capacityDinersPerHour = serverCount * serviceRate;
+        document.getElementById('waiter-max-capacity').textContent = Math.floor(capacityDinersPerHour * diners);
+        
+        // --- Chart Logic ---
+        const demandDinersPerHour = arrivals * diners;
+        const chartCapacityDiners = capacityDinersPerHour * diners;
+        
+        const chartMaxValue = Math.max(demandDinersPerHour, chartCapacityDiners, 1) * 1.25; // Add 25% buffer, ensure not 0
+
+        const demandBarHeight = chartMaxValue > 0 ? (demandDinersPerHour / chartMaxValue) * 100 : 0;
+        const capacityBarHeight = chartMaxValue > 0 ? (chartCapacityDiners / chartMaxValue) * 100 : 0;
+
+        const demandBar = document.getElementById('demand-bar');
+        const capacityBar = document.getElementById('capacity-bar');
+
+        demandBar.style.height = `${Math.min(100, demandBarHeight)}%`;
+        capacityBar.style.height = `${Math.min(100, capacityBarHeight)}%`;
+
+        // Change bar color if demand exceeds capacity
+        demandBar.classList.toggle('bg-red-400', demandDinersPerHour > chartCapacityDiners);
+        demandBar.classList.toggle('bg-blue-400', demandDinersPerHour <= chartCapacityDiners);
+
+        document.getElementById('demand-value').textContent = Math.round(demandDinersPerHour);
+        document.getElementById('capacity-value').textContent = Math.round(chartCapacityDiners);
+    }
+}
+
+/**
+ * Updates the main KPI cards based on the selected location.
+ * @param {string} locationKey - The key for the selected location ('aguda' or 'porto').
+ */
+function updateDashboard(locationKey) {
+    const { laborCost, staffProd, staffTurnover } = mockData[locationKey].detailedKpis;
+    
+    document.getElementById('kpi-labor-cost').textContent = laborCost;
+    document.getElementById('kpi-staff-prod').textContent = staffProd;
+
+    const turnoverEl = document.getElementById('kpi-staff-turnover');
+    turnoverEl.textContent = staffTurnover;
+    
+    const turnoverValue = parseFloat(staffTurnover);
+    turnoverEl.className = "text-3xl font-bold " + (turnoverValue < 4.5 ? 'text-green-600' : turnoverValue < 6 ? 'text-yellow-600' : 'text-red-600');
+}
+
+/**
+ * Sets the display language for the entire dashboard.
+ * @param {string} lang - The language to set ('es' or 'pt').
+ */
+function setLanguage(lang) {
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+
+    document.querySelectorAll('[data-translate-key]').forEach(el => {
+        const key = el.dataset.translateKey;
+        if (translations[lang] && translations[lang][key]) {
+            el.innerHTML = translations[lang][key]; // Use innerHTML to allow for <b> tags
+        }
+    });
+}
+
+// 4. EVENT LISTENERS & INITIALIZATION
+document.addEventListener('DOMContentLoaded', () => {
+    setLanguage('pt');
+    document.getElementById('lang-pt').classList.add('active');
+    
+    updateDashboard('aguda');
+    updateErlangCalculator('waiter');
+    updateErlangCalculator('kitchen');
+
+    // --- Global Selectors ---
+    const locationSelector = document.getElementById('location-selector');
+    const langButtons = document.querySelectorAll('.lang-btn');
+    const helpBtn = document.getElementById('help-btn');
+    const helpModal = document.getElementById('help-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    // --- Event Listeners ---
+    locationSelector.addEventListener('change', e => {
+        updateDashboard(e.target.value);
+    });
+
+    langButtons.forEach(btn => {
+        btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
+    });
+
+    ['waiter', 'kitchen'].forEach(type => {
+        let fields = ['arrivals', 'service-time', 'count'];
+        if (type === 'waiter') {
+            fields.push('diners');
+        }
+        fields.forEach(field => {
+            document.getElementById(`${type}-${field}`).addEventListener('input', () => updateErlangCalculator(type));
+        });
+    });
+
+    // Modal listeners
+    helpBtn.addEventListener('click', () => {
+        helpModal.classList.remove('hidden');
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        helpModal.classList.add('hidden');
+    });
+
+    helpModal.addEventListener('click', (e) => {
+        if (e.target.id === 'help-modal') {
+            helpModal.classList.add('hidden');
+        }
+    });
+});
+</script>
+
+</body>
+</html>
